@@ -1,28 +1,27 @@
 import requests
-import pandas as pd
-from io import StringIO
+import xml.etree.ElementTree as ET
 
 # URL для получения курсов валют
-url = 'http://www.cbr.ru/scripts/XML_daily.asp?date_req=02/12/2024'
+url = 'https://www.cbr.ru/scripts/XML_daily.asp'
 
 # Выполняем GET-запрос
 response = requests.get(url)
 
 # Проверяем успешность запроса
 if response.status_code == 200:
-    # Декодируем ответ в кодировке Windows-1251
-    content = response.content.decode('windows-1251')
-
-    # Используем StringIO для передачи строки в read_xml
-    xml_data = StringIO(content)
-
     # Парсим XML-ответ
-    root = pd.read_xml(xml_data, encoding='windows-1251')
+    root = ET.fromstring(response.content)
 
-    # Выбираем только нужные столбцы
-    df = root[['CharCode', 'Nominal', 'Name', 'Value']]
+    # Итерируемся по элементам Valute
+    for valute in root.findall('Valute'):
+        # Получаем код валюты
+        char_code = valute.find('CharCode').text
+        # Получаем значение курса
+        value = valute.find('Value').text
+        # Получаем номинал
+        nominal = valute.find('Nominal').text
 
-    # Выводим данные
-    print(df)
+        # Выводим информацию о валюте
+        print(f'Код валюты: {char_code}, Курс: {value}, Номинал: {nominal}')
 else:
     print(f'Ошибка при выполнении запроса: {response.status_code}')
